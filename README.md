@@ -73,6 +73,69 @@ If you complete 2FA but encounter error `-22410` (*Could not complete action*) o
 
 ---
 
+---
+
+## ❓ FAQ & Post-Fix Troubleshooting
+
+If you followed the main steps and hit one of the common edge cases below, use these targeted fixes.
+
+### 1. "I don't see `Anisette Settings` or `Anisette Servers` anywhere in SideStore"
+* **Why it happens:**
+  1. On **SideStore `0.7.0` Nightly**, the `Anisette Servers` menu is **hidden** while `On-Device Anisette` is turned ON. It is also **not** inside `Developer Options`, `Experimental Features`, or `Developer Portal Services`.
+  2. On older **Stable (`0.6.x`)** builds, the `User Customizations` menu may not exist at all.
+* **Fix:**
+  1. Check your version footer at the bottom of `Settings`. If you are not on `0.7.0` Nightly, update **in-place** via **iLoader v2.4.2** (do not uninstall, so your apps/data remain intact).
+  2. Navigate to `SideStore -> Settings -> ADVANCED SETTINGS -> User Customizations` (located directly under `Backup & Restore` and above `DIAGNOSTICS`).
+  3. Toggle **OFF** `On-Device Anisette`.
+  4. **Force-close** SideStore/LiveContainer from the iOS App Switcher and reopen it.
+  5. `Anisette Servers` will now appear in `Settings` (select `jkcoxson` and disable `Enable Auto Rotation`), and `Reset adi.pb` + `Anisette Client Configuration` remain inside `User Customizations`.
+
+---
+
+### 2. "What is the exact working LocalDevVPN / `Connection Config` setup?" (`Device Registration Error`)
+If you are stuck on `Device Registration Error` (`VPN tunnel iface is up but tunnel peer IP is not yet reachable — Cause: DeviceEndpointNotInitialized`):
+
+* **Working `Settings -> ADVANCED SETTINGS -> Connection Config` reference:**
+  | Setting | Working Value |
+  | :--- | :--- |
+  | **Use Local VPN** | `ON` |
+  | **User Configuration → Device IP** | *(Leave empty for auto-discovery)* |
+  | **User Configuration → RemotePair Port** | *(Leave empty for default `49152`)* |
+  | **Auto Discovered → Tunnel IP** | `10.7.1.1/32` |
+  | **Auto Discovered → Device IP** | `10.7.0.1/32` |
+  | **Auto Discovered → RemotePair Port** | `49152` |
+  | **Auto Discovered → Reachable** | **`Yes`** (Green) |
+
+* **Working `Settings -> Developer Options -> CONNECTION CONFIG` reference:**
+  * `Accept IPv6 Config`: **`OFF`**
+  * `Auto Retry RemotePairing Port`: **`ON`**
+* **Fix during login:** When the `Device Registration Error` popup appears right after 2FA, **do NOT tap `Cancel`**. Switch to **LocalDevVPN**, toggle it **OFF → ON**, ensure Wi-Fi is active, return to SideStore, and tap **`Retry`** (or **`Skip`** if your device was previously registered).
+
+---
+
+### 3. "Sign-in succeeded, but refreshing apps fails with `DeviceEndpointNotInitialized`"
+* **Why it happens:** Signing in to Apple ID uses your regular internet connection, whereas **refreshing apps** requires SideStore to connect to your device's local `RemotePairing` daemon through LocalDevVPN (`10.7.0.1:49152`).
+* **Fix:**
+  1. Open `iOS Settings -> General -> VPN & Device Management -> VPN` and confirm **LocalDevVPN** is **Connected** (turn off any conflicting VPN, Cloudflare WARP, or AdGuard DNS VPN). Keep **Wi-Fi ON**.
+  2. Open `iOS Settings -> Apps -> LiveContainer / SideStore` and verify **Local Network** permission is **ON**.
+  3. With LocalDevVPN already connected, **force-close** SideStore/LiveContainer and reopen it so the internal `minimuxer` backend binds cleanly to the active tunnel.
+  4. Verify **`Reachable: Yes`** in `Settings -> Connection Config` (with `User Configuration` fields left blank).
+  5. *(Optional for slow handshakes)* In `Settings -> Developer Options`, raise `Device (TCP) Probe Timeout` from `250 ms` to `500 ms`.
+  6. In `My Apps`, refresh **SideStore / LiveContainer first**, then run **`Refresh All`**.
+
+---
+
+### 4. "Endless UDID error / Reset Pairing File loop right after entering the 2FA code"
+* **Why it happens:** The stored `.mobiledevicepairing` file either references a mismatched UDID (common after restoring from an old iPhone backup) or has an invalidated iOS lockdown trust record. Resetting it solely inside SideStore cannot mint a new cryptographic pair record over USB.
+* **Fix:**
+  1. Go to `SideStore -> Settings -> ADVANCED SETTINGS -> Pairing File Management`, clear/remove the existing pairing file, and **force-close** SideStore/LiveContainer.
+  2. Connect your iPhone to your PC/Mac via USB, unlock it, and tap **"Trust This Computer"**.
+     * *If the Trust prompt never appears and the loop persists:* go to `iOS Settings -> General -> Transfer or Reset iPhone -> Reset -> Reset Location & Privacy`, reconnect USB, and accept **Trust**.
+  3. Open **iLoader v2.4.2** on your computer, press **Refresh (`Ctrl+R`)** to select your iPhone, and click **`Manage Pairing File` (`Ctrl+P`)** under `MANAGEMENT` (or reinstall in-place so **`Place Pairing File`** finishes with a green check).
+  4. Disconnect USB, enable **LocalDevVPN**, verify `Reachable: Yes` in `Connection Config`, and complete login + 2FA.
+
+---
+
 ## ☕ Support My Work / Apoya mi trabajo
 
 Everything I document and build is 100% free and open-source. If this guide saved you hours of troubleshooting or avoided having to wipe your apps:
